@@ -26,10 +26,10 @@ Content-Type: application/json
 
 # @name create_question
 POST {{host}}/questions
-Content-Type: application/json
 Authorization: Bearer {{authToken}}
+Content-Type: application/json
 
 {
-  "email": "carlosfaustino@email.com",
-  "password": "123456"
+  "title": "Nova pergunta",
+  "content": "Conteúdo da pergunta"
 }
