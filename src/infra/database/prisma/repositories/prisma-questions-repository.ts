@@ -6,16 +6,28 @@ import type { QuestionAttachmentsRepository } from "@/domain/forum/application/r
 import type { QuestionsRepository } from "@/domain/forum/application/repositories/questions-repository"
 import type { Question } from "@/domain/forum/enterprise/entities/question"
 
+import { PrismaQuestionMapper } from "../mappers/prisma-question-mapper"
+import type { PrismaService } from "../prisma.service"
+
 @Injectable()
 export class PrismaQuestionsRepository implements QuestionsRepository {
   public items: Question[] = []
 
   constructor(
+    private prisma: PrismaService,
     private questionAttachmentsRepository: QuestionAttachmentsRepository,
   ) {}
 
   async findById(id: string): Promise<Question | null> {
-    return this.items.find(item => item.id.toString() === id) ?? null
+    const question = await this.prisma.question.findUnique({
+      where: {
+        id,
+      },
+    })
+
+    if (!question) return null
+
+    return PrismaQuestionMapper.toDomain(question)
   }
 
   async findBySlug(slug: string): Promise<Question | null> {
