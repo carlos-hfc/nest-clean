@@ -17,6 +17,6 @@ POST {{host}}/sessions
 Content-Type: application/json
 
 {
-  "name": "",
-  "password": ""
+  "email": "carlosfaustino@email.com",
+  "password": "123456"
 }
