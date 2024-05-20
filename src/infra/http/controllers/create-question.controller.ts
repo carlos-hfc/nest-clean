@@ -6,7 +6,7 @@ import type { UserPayload } from "@/infra/auth/jwt.strategy"
 import { JwtAuthGuard } from "@/infra/auth/jwt-auth.guard"
 import { ZodValidationPipe } from "@/infra/http/pipes/zod-validation.pipe"
 
-import { PrismaService } from "../../prisma/prisma.service"
+import { PrismaService } from "../../database/prisma/prisma.service"
 
 const bodySchema = z.object({
   title: z.string(),

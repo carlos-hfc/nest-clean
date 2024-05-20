@@ -11,7 +11,7 @@ import { z } from "zod"
 
 import { ZodValidationPipe } from "@/infra/http/pipes/zod-validation.pipe"
 
-import { PrismaService } from "../../prisma/prisma.service"
+import { PrismaService } from "../../database/prisma/prisma.service"
 
 const bodySchema = z.object({
   email: z.string().email(),
