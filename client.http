@@ -1,4 +1,5 @@
 @host = http://localhost:3333
+@authToken = {{authenticate.response.body.accessToken}}
 
 # @name create_account
 POST {{host}}/accounts
@@ -15,6 +16,18 @@ Content-Type: application/json
 # @name authenticate
 POST {{host}}/sessions
 Content-Type: application/json
+
+{
+  "email": "carlosfaustino@email.com",
+  "password": "123456"
+}
+
+###
+
+# @name create_question
+POST {{host}}/questions
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "email": "carlosfaustino@email.com",
