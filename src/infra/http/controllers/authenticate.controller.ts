@@ -1,17 +1,8 @@
-import {
-  Body,
-  Controller,
-  Post,
-  UnauthorizedException,
-  UsePipes,
-} from "@nestjs/common"
-import { JwtService } from "@nestjs/jwt"
-import { compare } from "bcryptjs"
+import { Body, Controller, Post, UsePipes } from "@nestjs/common"
 import { z } from "zod"
 
+import { AuthenticateStudentUseCase } from "@/domain/forum/application/use-cases/authenticate-student"
 import { ZodValidationPipe } from "@/infra/http/pipes/zod-validation.pipe"
-
-import { PrismaService } from "../../database/prisma/prisma.service"
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -22,31 +13,23 @@ type AuthenticateBodySchema = z.infer<typeof bodySchema>
 
 @Controller("/sessions")
 export class AuthenticateController {
-  constructor(
-    private prisma: PrismaService,
-    private jwt: JwtService,
-  ) {}
+  constructor(private authenticateStudent: AuthenticateStudentUseCase) {}
 
   @Post()
   @UsePipes(new ZodValidationPipe(bodySchema))
   async handle(@Body() body: AuthenticateBodySchema) {
     const { email, password } = body
 
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+    const result = await this.authenticateStudent.execute({
+      email,
+      password,
     })
 
-    if (!user) {
-      throw new UnauthorizedException("Invalid credentials.")
+    if (result.isLeft()) {
+      throw new Error("Invalid credentials.")
     }
 
-    const isPasswordValid = await compare(password, user.password)
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException("Invalid credentials.")
-    }
-
-    const accessToken = this.jwt.sign({ sub: user.id })
+    const { accessToken } = result.value
 
     return { accessToken }
   }
