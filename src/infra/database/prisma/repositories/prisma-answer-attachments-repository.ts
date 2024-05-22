@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common"
 
-import type { AnswerAttachmentsRepository } from "@/domain/forum/application/repositories/answer-attachments-repository"
-import type { AnswerAttachment } from "@/domain/forum/enterprise/entities/answer-attachment"
+import { AnswerAttachmentsRepository } from "@/domain/forum/application/repositories/answer-attachments-repository"
+import { AnswerAttachment } from "@/domain/forum/enterprise/entities/answer-attachment"
+
+import { PrismaAnswerAttachmentMapper } from "../mappers/prisma-answer-attachment-mapper"
+import { PrismaService } from "../prisma.service"
 
 @Injectable()
 export class PrismaAnswerAttachmentsRepository
@@ -9,19 +12,23 @@ export class PrismaAnswerAttachmentsRepository
 {
   public items: AnswerAttachment[] = []
 
-  async findManyByAnswerId(answerId: string): Promise<AnswerAttachment[]> {
-    const answerAttachments = this.items.filter(
-      item => item.answerId.toString() === answerId,
-    )
+  constructor(private prisma: PrismaService) {}
 
-    return answerAttachments
+  async findManyByAnswerId(answerId: string): Promise<AnswerAttachment[]> {
+    const answerAttachments = await this.prisma.attachment.findMany({
+      where: {
+        answerId,
+      },
+    })
+
+    return answerAttachments.map(PrismaAnswerAttachmentMapper.toDomain)
   }
 
   async deleteManyByAnswerId(answerId: string): Promise<void> {
-    const answerAttachments = this.items.filter(
-      item => item.answerId.toString() !== answerId,
-    )
-
-    this.items = answerAttachments
+    await this.prisma.attachment.deleteMany({
+      where: {
+        answerId,
+      },
+    })
   }
 }

@@ -1,53 +1,74 @@
 import { Injectable } from "@nestjs/common"
 
-import { DomainEvents } from "@/core/events/domain-events"
-import type { PaginationParams } from "@/core/repositories/pagination-params"
-import type { AnswerAttachmentsRepository } from "@/domain/forum/application/repositories/answer-attachments-repository"
-import type { AnswersRepository } from "@/domain/forum/application/repositories/answers-repository"
-import type { Answer } from "@/domain/forum/enterprise/entities/answer"
+import { PaginationParams } from "@/core/repositories/pagination-params"
+import { AnswersRepository } from "@/domain/forum/application/repositories/answers-repository"
+import { Answer } from "@/domain/forum/enterprise/entities/answer"
+
+import { PrismaAnswerMapper } from "../mappers/prisma-answer-mapper"
+import { PrismaService } from "../prisma.service"
 
 @Injectable()
 export class PrismaAnswersRepository implements AnswersRepository {
   public items: Answer[] = []
 
-  constructor(
-    private answerAttachmentsRepository: AnswerAttachmentsRepository,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<Answer | null> {
-    return this.items.find(item => item.id.toString() === id) ?? null
+    const answer = await this.prisma.answer.findUnique({
+      where: {
+        id,
+      },
+    })
+
+    if (!answer) return null
+
+    return PrismaAnswerMapper.toDomain(answer)
   }
 
   async findManyByQuestionId(
     questionId: string,
     { page }: PaginationParams,
   ): Promise<Answer[]> {
-    const answers = this.items
-      .filter(item => item.questionId.toString() === questionId)
-      .slice((page - 1) * 20, page * 20)
+    const perPage = 20
 
-    return answers
+    const answers = await this.prisma.answer.findMany({
+      where: {
+        questionId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: perPage,
+      skip: (page - 1) * perPage,
+    })
+
+    return answers.map(PrismaAnswerMapper.toDomain)
   }
 
   async save(answer: Answer): Promise<void> {
-    const itemIndex = this.items.findIndex(item => item.id === answer.id)
+    const data = PrismaAnswerMapper.toPrisma(answer)
 
-    this.items[itemIndex] = answer
-
-    DomainEvents.dispatchEventsForAggregate(answer.id)
+    await this.prisma.answer.update({
+      where: {
+        id: data.id,
+      },
+      data,
+    })
   }
 
   async create(answer: Answer): Promise<void> {
-    this.items.push(answer)
+    const data = PrismaAnswerMapper.toPrisma(answer)
 
-    DomainEvents.dispatchEventsForAggregate(answer.id)
+    await this.prisma.answer.create({ data })
   }
 
   async delete(answer: Answer): Promise<void> {
-    const itemIndex = this.items.findIndex(item => item.id === answer.id)
+    const data = PrismaAnswerMapper.toPrisma(answer)
 
-    this.items.splice(itemIndex, 1)
-
-    this.answerAttachmentsRepository.deleteManyByAnswerId(answer.id.toString())
+    await this.prisma.answer.delete({
+      where: {
+        id: data.id,
+      },
+    })
   }
 }
