@@ -2,8 +2,9 @@ import type { INestApplication } from "@nestjs/common"
 import { JwtService } from "@nestjs/jwt"
 import { Test } from "@nestjs/testing"
 import request from "supertest"
+import { AnswerFactory } from "test/factories/make-answer"
+import { AnswerCommentFactory } from "test/factories/make-answer-comment"
 import { QuestionFactory } from "test/factories/make-question"
-import { QuestionCommentFactory } from "test/factories/make-question-comment"
 import { StudentFactory } from "test/factories/make-student"
 
 import { AppModule } from "@/infra/app.module"
@@ -12,27 +13,34 @@ import { DatabaseModule } from "@/infra/database/database.module"
 let app: INestApplication
 let studentFactory: StudentFactory
 let questionFactory: QuestionFactory
-let questionCommentFactory: QuestionCommentFactory
+let answerFactory: AnswerFactory
+let answerCommentFactory: AnswerCommentFactory
 let jwt: JwtService
 
-describe("Fetch Question Comments (E2E)", () => {
+describe("Fetch Answer Comments (E2E)", () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule, DatabaseModule],
-      providers: [StudentFactory, QuestionFactory, QuestionCommentFactory],
+      providers: [
+        StudentFactory,
+        AnswerFactory,
+        QuestionFactory,
+        AnswerCommentFactory,
+      ],
     }).compile()
 
     app = moduleRef.createNestApplication()
 
     studentFactory = moduleRef.get(StudentFactory)
+    answerFactory = moduleRef.get(AnswerFactory)
     questionFactory = moduleRef.get(QuestionFactory)
-    questionCommentFactory = moduleRef.get(QuestionCommentFactory)
+    answerCommentFactory = moduleRef.get(AnswerCommentFactory)
     jwt = moduleRef.get(JwtService)
 
     await app.init()
   })
 
-  test("[GET] /questions/:questionId/comments", async () => {
+  test("[GET] /answers/:answerId/comments", async () => {
     const user = await studentFactory.makePrismaStudent()
 
     const token = jwt.sign({ sub: user.id.toString() })
@@ -41,25 +49,30 @@ describe("Fetch Question Comments (E2E)", () => {
       authorId: user.id,
     })
 
+    const answer = await answerFactory.makePrismaAnswer({
+      authorId: user.id,
+      questionId: question.id,
+    })
+
     await Promise.all([
-      questionCommentFactory.makePrismaQuestionComment({
+      answerCommentFactory.makePrismaAnswerComment({
         authorId: user.id,
-        questionId: question.id,
-        content: "QuestionComment 1",
+        answerId: answer.id,
+        content: "AnswerComment 1",
       }),
-      questionCommentFactory.makePrismaQuestionComment({
+      answerCommentFactory.makePrismaAnswerComment({
         authorId: user.id,
-        questionId: question.id,
-        content: "QuestionComment 2",
+        answerId: answer.id,
+        content: "AnswerComment 2",
       }),
     ])
 
     const response = await request(app.getHttpServer())
-      .get(`/questions/${question.id.toString()}/comments`)
+      .get(`/answers/${answer.id.toString()}/comments`)
       .set("Authorization", `Bearer ${token}`)
       .send()
 
     expect(response.statusCode).toEqual(200)
-    expect(response.body.questionComments).toHaveLength(2)
+    expect(response.body.answerComments).toHaveLength(2)
   })
 })
