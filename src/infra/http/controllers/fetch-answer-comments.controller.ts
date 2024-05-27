@@ -10,7 +10,7 @@ import { z } from "zod"
 import { FetchAnswerCommentsUseCase } from "@/domain/forum/application/use-cases/fetch-answer-comments"
 import { ZodValidationPipe } from "@/infra/http/pipes/zod-validation.pipe"
 
-import { CommentPresenter } from "../presentes/comment-presenter"
+import { CommentWithAuthorPresenter } from "../presentes/comment-with-author-presenter"
 
 const querySchema = z
   .string()
@@ -42,7 +42,7 @@ export class FetchAnswerCommentsController {
     }
 
     return {
-      answerComments: result.value.answerComments.map(CommentPresenter.toHTTP),
+      comments: result.value.comments.map(CommentWithAuthorPresenter.toHTTP),
     }
   }
 }
