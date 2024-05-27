@@ -4,7 +4,7 @@ import { z } from "zod"
 import { GetQuestionBySlugUseCase } from "@/domain/forum/application/use-cases/get-question-by-slug"
 import { ZodValidationPipe } from "@/infra/http/pipes/zod-validation.pipe"
 
-import { QuestionPresenter } from "../presentes/question-presenter"
+import { QuestionDetailsPresenter } from "../presentes/question-details-presenter"
 
 const paramSchema = z.string()
 
@@ -26,6 +26,6 @@ export class GetQuestionBySlugController {
       throw new BadRequestException()
     }
 
-    return { question: QuestionPresenter.toHTTP(result.value.question) }
+    return { question: QuestionDetailsPresenter.toHTTP(result.value.question) }
   }
 }
